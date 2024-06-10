@@ -1,6 +1,5 @@
-# check_http_methods.sh
-# Licensed under the MIT License - see the LICENSE file for details
 #!/bin/bash
+# Licensed under the MIT License - see the LICENSE file for details
 
 # Colores
 RED='\033[0;31m'
@@ -9,16 +8,14 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Banner ASCII
-
-echo "================================================================================="
-echo -e "${BLUE} HTTP Security Checker - Version 1.0${NC}"
-echo "================================================================================="
-
+# Banner de encabezado
+echo -e "${BLUE}================================================================================="
+echo -e "HTTP Security Checker - Version 1.0"
+echo -e "=================================================================================${NC}"
 
 # Función para validar la URL
 validate_url() {
-    if [[ $1 =~ ^https?:// ]]; then
+    if [[ "$1" =~ ^https?:// ]]; then
         return 0
     else
         return 1
@@ -42,28 +39,28 @@ while true; do
 done
 
 # Lista completa de métodos HTTP a probar y sus explicaciones
-declare -A METHODS
-METHODS=(
-    ["OPTIONS"]="Permite al cliente ver los métodos HTTP permitidos por el servidor."
-    ["TRACE"]="Puede ser explotado para ataques de Cross-Site Tracing (XST). Debe ser deshabilitado en producción."
-    ["PUT"]="Permite subir archivos al servidor. Debe estar protegido para evitar cargas maliciosas."
-    ["DELETE"]="Permite eliminar recursos en el servidor. Debe estar restringido para evitar eliminaciones no autorizadas."
-    ["GET"]="Método común para solicitar recursos. Generalmente seguro, pero debe ser monitoreado para evitar abuso."
-    ["HEAD"]="Similar a GET, pero solo solicita los encabezados de la respuesta. Generalmente seguro."
-    ["POST"]="Utilizado para enviar datos al servidor, como formularios. Debe estar protegido contra inyecciones y abusos."
-    ["PATCH"]="Utilizado para aplicar modificaciones parciales a un recurso. Debe estar restringido y monitoreado."
-    ["CONNECT"]="Utilizado para túneles a través de proxies HTTP. Puede ser explotado para ataques y generalmente debe ser deshabilitado."
+METHODS=("OPTIONS" "TRACE" "PUT" "DELETE" "GET" "HEAD" "POST" "PATCH" "CONNECT")
+METHODS_DESCRIPTIONS=(
+    "Permite al cliente ver los métodos HTTP permitidos por el servidor."
+    "Puede ser explotado para ataques de Cross-Site Tracing (XST). Debe ser deshabilitado en producción."
+    "Permite subir archivos al servidor. Debe estar protegido para evitar cargas maliciosas."
+    "Permite eliminar recursos en el servidor. Debe estar restringido para evitar eliminaciones no autorizadas."
+    "Método común para solicitar recursos. Generalmente seguro, pero debe ser monitoreado para evitar abuso."
+    "Similar a GET, pero solo solicita los encabezados de la respuesta. Generalmente seguro."
+    "Utilizado para enviar datos al servidor, como formularios. Debe estar protegido contra inyecciones y abusos."
+    "Utilizado para aplicar modificaciones parciales a un recurso. Debe estar restringido y monitoreado."
+    "Utilizado para túneles a través de proxies HTTP. Puede ser explotado para ataques y generalmente debe ser deshabilitado."
 )
 
 # Función para probar un método HTTP
 test_http_method() {
     METHOD=$1
-    RESPONSE=$(curl -sk -X $METHOD -I -L $URL 2>&1)
+    RESPONSE=$(curl -sk -X "$METHOD" -I -L "$URL" 2>&1)
     RESPONSE_CODE=$(echo "$RESPONSE" | grep HTTP/ | tail -n 1 | awk '{print $2}')
     if [[ "$RESPONSE_CODE" == "200" || "$RESPONSE_CODE" == "204" || "$RESPONSE_CODE" == "401" || "$RESPONSE_CODE" == "403" || "$RESPONSE_CODE" == "404" ]]; then
-        echo -e "$METHOD: ${RED}Habilitado${NC} - Código de respuesta: ${BLUE}$RESPONSE_CODE${NC}" >> enabled_methods.txt
+        echo -e "${BLUE}$METHOD${NC}: ${RED}Habilitado${NC} - Código de respuesta: ${BLUE}$RESPONSE_CODE${NC}" >> enabled_methods.txt
     else
-        echo -e "$METHOD: ${GREEN}No habilitado${NC} - Código de respuesta: ${BLUE}$RESPONSE_CODE${NC}" >> disabled_methods.txt
+        echo -e "${BLUE}$METHOD${NC}: ${GREEN}No habilitado${NC} - Código de respuesta: ${BLUE}$RESPONSE_CODE${NC}" >> disabled_methods.txt
     fi
 }
 
@@ -72,22 +69,22 @@ HEADERS=("Strict-Transport-Security" "X-Content-Type-Options" "X-Frame-Options" 
 
 # Función para comprobar cabeceras de seguridad
 check_security_headers() {
-    RESPONSE=$(curl -sk -I -L $URL 2>/dev/null)
+    RESPONSE=$(curl -sk -I -L "$URL" 2>/dev/null)
     echo "$RESPONSE" > response_headers.txt
     for HEADER in "${HEADERS[@]}"; do
         HEADER_VALUE=$(grep -i "$HEADER" response_headers.txt)
         if [ ! -z "$HEADER_VALUE" ]; then
-            echo -e "$HEADER: ${GREEN}Presente${NC} - ${HEADER_VALUE}" >> present_headers.txt
+            echo -e "${BLUE}$HEADER${NC}: ${GREEN}Presente${NC} - ${HEADER_VALUE}" >> present_headers.txt
         else
-            echo -e "$HEADER: ${RED}Ausente${NC}" >> absent_headers.txt
+            echo -e "${BLUE}$HEADER${NC}: ${RED}Ausente${NC}" >> absent_headers.txt
         fi
     done
 }
 
 # Función para comprobar detalles SSL
 check_ssl_details() {
-    RESPONSE=$(curl -sk -v $URL 2>&1 | grep "SSL connection using")
-    echo "SSL Details: $RESPONSE" >> ssl_details.txt
+    RESPONSE=$(curl -sk -v "$URL" 2>&1 | grep "SSL connection using")
+    echo -e "${BLUE}SSL Details${NC}: $RESPONSE" >> ssl_details.txt
 }
 
 # Limpiar archivos temporales
@@ -96,8 +93,8 @@ rm -f enabled_methods.txt disabled_methods.txt present_headers.txt absent_header
 # Probar todos los métodos HTTP
 echo -e "${BLUE}Probando métodos HTTP en $URL${NC}"
 echo "================================"
-for METHOD in "${!METHODS[@]}"; do
-    test_http_method $METHOD
+for i in "${!METHODS[@]}"; do
+    test_http_method "${METHODS[$i]}"
 done
 
 # Mostrar resultados de métodos HTTP
@@ -149,6 +146,7 @@ fi
 
 # Limpiar archivos temporales
 rm -f enabled_methods.txt disabled_methods.txt present_headers.txt absent_headers.txt response_headers.txt ssl_details.txt
+
 
 # Leyenda de colores
 echo -e "${BLUE}Leyenda de colores:${NC}"
